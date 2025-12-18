@@ -1,0 +1,130 @@
+Axiom – 16-bit Custom CPU ISA (dest-first syntax)
+
+=======================================
+Registers
+=======================================
+
+R0–R7 : General-purpose registers (16-bit)
+
+SP : Stack Pointer (16-bit)
+
+PC : Program Counter (16-bit)
+
+FLAGS : Status flags (Z, C, S, O, etc.)
+
+=======================================
+Memory Layout
+=======================================
+
+0x0000 – 0x0FFF : IVT (Interrupt Vector Table)
+
+0x1000 – 0xFFFF : General RAM/ROM
+
+Each interrupt vector = 2 bytes (16-bit ISR address)
+
+Example:
+0x0000 : Reset vector (initial PC)
+0x0002 : Timer interrupt
+0x0004 : Keyboard interrupt
+...
+
+=======================================
+Assembly Syntax Rules
+=======================================
+
+Destination operand is ALWAYS first (written)
+
+Immediates use '#' prefix (e.g., #4, #0x2A, #0b1010)
+
+Memory operands use brackets: [addr]
+
+Labels are identifiers ending with ':' (e.g., loop:)
+
+=======================================
+ALU / Logic
+=======================================
+
+ADD Ra, Rb      ; Ra = Ra + Rb
+SUB Ra, Rb      ; Ra = Ra - Rb
+AND Ra, Rb      ; Ra = Ra & Rb
+OR Ra, Rb       ; Ra = Ra | Rb
+XOR Ra, Rb      ; Ra = Ra ^ Rb
+NOT Ra          ; Ra = ~Ra
+SHL Ra, #n      ; Ra = Ra << n
+SHR Ra, #n      ; Ra = Ra >> n
+CMP Ra, Rb      ; set FLAGS based on (Ra - Rb), no writeback
+
+=======================================
+Data Movement
+=======================================
+                
+MOV Ra, Rb      ; Ra = Rb
+MOV Ra, #imm    ; Ra = imm (immediate form)
+
+=======================================
+Control Flow
+=======================================
+
+JMP addr        ; PC = addr
+JZ addr         ; if Z=1 then PC = addr
+JNZ addr        ; if Z=0 then PC = addr
+JC addr         ; if C=1 then PC = addr
+JNC addr        ; if C=0 then PC = addr
+CALL addr       ; push return address, PC = addr
+RET             ; pop return address into PC
+IRET            ; pop FLAGS + PC (return from interrupt)
+
+=======================================
+Memory Access
+=======================================
+
+LD Ra, [addr]   ; Ra = mem[addr]
+ST [addr], Ra   ; mem[addr] = Ra
+PUSH Ra         ; push Ra to stack (SP updates internally)
+POP Ra          ; pop stack into Ra
+
+=======================================
+Interrupts / IVT
+=======================================
+
+IVT starts at 0x0000
+Each vector = 2 bytes (16-bit address)
+
+Example:
+0x0000 : Reset
+0x0002 : Timer
+0x0004 : Keyboard
+
+On interrupt:
+CPU pushes FLAGS then PC to stack
+PC = ISR address read from IVT[vector]
+ISR executes
+ISR ends with IRET (restores PC + FLAGS)
+
+=======================================
+Instruction Encoding (base format)
+=======================================
+
+16-bit instruction word
+[15:12] opcode (4 bits)
+[11:9] Ra (3 bits)
+[8:6] Rb (3 bits)
+[5:0] imm6 / func6 (6 bits)
+
+Example opcodes (suggested mapping)
+0000 : NOP
+0001 : ADD
+0010 : SUB
+0011 : AND
+0100 : OR
+0101 : XOR
+0110 : NOT
+0111 : SHL
+1000 : SHR
+1001 : CMP
+1010 : MOV
+1011 : JMP
+1100 : JZ
+1101 : JNZ
+1110 : CALL
+1111 : RET / IRET (distinguish via func6)

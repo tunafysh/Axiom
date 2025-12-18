@@ -1,5 +1,0 @@
-[workspace]
-resolver = "3"
-members = ["Assembler", "Emulator"]
-package.version = "0.1.0"
-package.edition = "2021"

@@ -1,0 +1,9 @@
+[package]
+name = "axiom-assembler"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+chumsky = "0.12.0"
+clap = "4.5.53"

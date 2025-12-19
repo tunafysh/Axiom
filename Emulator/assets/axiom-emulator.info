@@ -1,0 +1,15 @@
+# Software Information
+display_name = "Axiom"
+authors = "tunafysh"
+supported_extensions = "rom|bin"
+corename = "axiom"
+license = ""
+permissions = ""
+display_version = "0.1.0"
+categories = "Emulator"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Axiom"
+
+description = "A custom 16-bit CPU made for fun by me."

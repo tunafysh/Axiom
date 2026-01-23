@@ -7,9 +7,7 @@ option(BUILD_AS_EXECUTABLE "Build axiom-emulator as an executable" ON)
 
 find_package(raylib REQUIRED)
 
-
-# List of sources
-set(SOURCES src/main.c)
+file(GLOB_RECURSE SOURCES "src/*.c")
 
 # Build depending on the option
 if(BUILD_AS_EXECUTABLE)

@@ -102,16 +102,64 @@ ISR executes
 ISR ends with IRET (restores PC + FLAGS)
 
 =======================================
-Instruction Encoding (base format)
+Instruction Encoding (multi-word format)
 =======================================
 
-16-bit instruction word
+Base 16-bit instruction word format:
 [15:12] opcode (4 bits)
-[11:9] Ra (3 bits)
-[8:6] Rb (3 bits)
-[5:0] imm6 / func6 (6 bits)
+[11:9]  Ra (3 bits - destination/source register)
+[8:6]   Rb (3 bits - source register)
+[5]     EXT (1 bit - extended instruction flag)
+[4:0]   func5 (5 bits - function code / small immediate)
 
-Example opcodes (suggested mapping)
+EXT bit:
+  0 = Single-word instruction (register-only)
+  1 = Two-word instruction (next word contains 16-bit immediate/address)
+
+=======================================
+Single-Word Instructions (EXT=0)
+=======================================
+
+Register-to-register operations:
+ADD Ra, Rb      → [0001][Ra][Rb][0][00000]
+SUB Ra, Rb      → [0010][Ra][Rb][0][00000]
+AND Ra, Rb      → [0011][Ra][Rb][0][00000]
+OR  Ra, Rb      → [0100][Ra][Rb][0][00000]
+XOR Ra, Rb      → [0101][Ra][Rb][0][00000]
+NOT Ra          → [0110][Ra][000][0][00000]
+MOV Ra, Rb      → [1010][Ra][Rb][0][00000]
+CMP Ra, Rb      → [1001][Ra][Rb][0][00000]
+PUSH Ra         → [1100][Ra][000][0][00001]
+POP Ra          → [1100][Ra][000][0][00010]
+RET             → [1111][000][000][0][00001]
+IRET            → [1111][000][000][0][00010]
+NOP             → [0000][000][000][0][00000]
+
+Shift with small immediate (func5 = shift amount, 0-31):
+SHL Ra, #n      → [0111][Ra][000][0][nnnnn]
+SHR Ra, #n      → [1000][Ra][000][0][nnnnn]
+
+=======================================
+Two-Word Instructions (EXT=1)
+=======================================
+
+Format: Word1 [opcode][Ra][Rb][1][func5]
+        Word2 [16-bit immediate or address]
+
+MOV Ra, #imm16  → [1010][Ra][000][1][00000]  + [imm16]
+LD  Ra, [addr]  → [1011][Ra][000][1][00000]  + [addr16]
+ST  [addr], Ra  → [1011][000][Ra][1][00001]  + [addr16]
+JMP addr        → [1101][000][000][1][00000]  + [addr16]
+JZ  addr        → [1101][000][000][1][00001]  + [addr16]
+JNZ addr        → [1101][000][000][1][00010]  + [addr16]
+JC  addr        → [1101][000][000][1][00011]  + [addr16]
+JNC addr        → [1101][000][000][1][00100]  + [addr16]
+CALL addr       → [1110][000][000][1][00000]  + [addr16]
+
+=======================================
+Opcode Map (suggested)
+=======================================
+
 0000 : NOP
 0001 : ADD
 0010 : SUB
@@ -122,9 +170,21 @@ Example opcodes (suggested mapping)
 0111 : SHL
 1000 : SHR
 1001 : CMP
-1010 : MOV
-1011 : JMP
-1100 : JZ
-1101 : JNZ
+1010 : MOV (EXT=0: Reg-Reg, EXT=1: Reg-Imm)
+1011 : LD/ST (EXT=1 required, func5 distinguishes LD vs ST)
+1100 : PUSH/POP (func5 distinguishes operations)
+1101 : JMP/Jcc (EXT=1 required, func5 selects condition)
 1110 : CALL
-1111 : RET / IRET (distinguish via func6)
+1111 : RET/IRET (func5 distinguishes)
+
+=======================================
+Control Unit Fetch Cycle
+=======================================
+
+1. FETCH word1 from memory[PC]
+2. DECODE opcode, Ra, Rb, EXT, func5
+3. IF EXT=1:
+     - PC = PC + 1
+     - FETCH word2 from memory[PC] (immediate/address)
+4. EXECUTE instruction
+5. PC = PC + 1 (or update based on branch/jump)
